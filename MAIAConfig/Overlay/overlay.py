@@ -24,6 +24,8 @@ _CALO_WINDOWS = {
     "ECalEndcapCollection": [-0.5, 15.],
     "HCalBarrelCollection": [-0.5, 15.],
     "HCalEndcapCollection": [-0.5, 15.],
+    "YokeBarrelCollection": [-0.5, 15.],
+    "YokeEndcapCollection": [-0.5, 15.],
 }
 
 # Number of incoherent-pair events overlaid per signal event. One pair file
