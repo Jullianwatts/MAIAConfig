@@ -1,6 +1,7 @@
 import os
+import glob
 from GaudiKernel.Constants import INFO, WARNING
-from Configurables import OverlayTimingRandomMix
+from Configurables import OverlayTiming
 
 # Per-collection integration time windows. The tracker windows are tighter than
 # the calorimeter ones; the same windows apply to every background source, so a
@@ -30,24 +31,22 @@ _CALO_WINDOWS = {
 _IP_NUMBER_BACKGROUND = 1
 
 
-def _as_directories(paths):
+def _expand_files(paths):
     """
-    Map background file paths onto the directories that contain them, keeping
-    the first-seen order and dropping duplicates.
+    Expand background paths into a sorted list of ROOT files: a directory
+    contributes every .root file it contains, a file is kept as is.
 
-    OverlayTimingRandomMix decides once, from the very first entry of
-    BackgroundFileNames, whether the whole property lists files or directories,
-    so the BIB directories and the incoherent-pair files cannot be mixed. The
-    BIB side can only be given as directories, hence the pair files are folded
-    into theirs when both overlays run together. Every .root file in that
-    directory then joins the pool the pair event is drawn from.
+    With RandomMixBackgroundFiles each file of a group is an independent
+    pseudo-event source, and OverlayTiming expects the files themselves (the
+    directory globbing was moved out of the algorithm into the options).
     """
-    directories = []
+    files = []
     for path in paths:
-        directory = path if os.path.isdir(path) else os.path.dirname(os.path.abspath(path))
-        if directory not in directories:
-            directories.append(directory)
-    return directories
+        if os.path.isdir(path):
+            files += sorted(glob.glob(os.path.join(path, "*.root")))
+        else:
+            files.append(path)
+    return files
 
 
 def _background_groups(args):
@@ -58,25 +57,14 @@ def _background_groups(args):
     Each group is overlaid independently, so the BIB muon-decay samples and the
     incoherent pairs simply become separate groups of the same algorithm.
     """
-    ip_paths = list(args.OverlayIPBackgroundFileNames) if args.doOverlayIP else []
-    # Directory mode is forced as soon as the BIB overlay contributes a group.
-    if args.doOverlayFull and ip_paths:
-        ip_paths = _as_directories(ip_paths)
-
     groups, number_background = [], []
     if args.doOverlayFull:
-        groups += [[args.OverlayFullPathToMuPlus], [args.OverlayFullPathToMuMinus]]
+        groups += [_expand_files([args.OverlayFullPathToMuPlus]),
+                   _expand_files([args.OverlayFullPathToMuMinus])]
         number_background += [args.OverlayFullNumberBackground] * 2
     if args.doOverlayIP:
-        if args.doOverlayFull:
-            # One group per directory: the algorithm splits a directory-valued
-            # property one entry per group, so anything else would desynchronise
-            # the groups from NumberBackground.
-            groups += [[path] for path in ip_paths]
-            number_background += [_IP_NUMBER_BACKGROUND] * len(ip_paths)
-        else:
-            groups.append(ip_paths)
-            number_background.append(_IP_NUMBER_BACKGROUND)
+        groups.append(_expand_files(args.OverlayIPBackgroundFileNames))
+        number_background.append(_IP_NUMBER_BACKGROUND)
     return groups, number_background
 
 
@@ -98,8 +86,10 @@ def overlay_cfg(args):
     """
     groups, number_background = _background_groups(args)
 
-    return OverlayTimingRandomMix(
+    return OverlayTiming(
         "Overlay",
+        # Draw one background file per overlaid event (one pseudo-event each).
+        RandomMixBackgroundFiles = True,
         BackgroundFileNames = groups,
         NumberBackground = number_background,
         TimeWindows = {**_TRACKER_WINDOWS, **_CALO_WINDOWS},
@@ -112,7 +102,7 @@ def overlay_cfg(args):
         CopyCellIDMetadata = True,
         SimTrackerHits = list(_TRACKER_WINDOWS),
         SimCalorimeterHits = list(_CALO_WINDOWS),
-        MCParticles = ["MCParticles"],
+        MCParticles = "MCParticles",
         OutputSimTrackerHits = ["Overlay" + name for name in _TRACKER_WINDOWS],
         OutputSimCalorimeterHits = ["Overlay" + name for name in _CALO_WINDOWS],
         OutputCaloHitContributions = [
