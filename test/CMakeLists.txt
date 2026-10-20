@@ -55,6 +55,13 @@ add_test(NAME pandora_settings_path
                  python3 ${CMAKE_CURRENT_LIST_DIR}/check_pandora_settings.py
 )
 
+# The parametric and realistic tracker digitisers must write the collections the tracking reads
+add_test(NAME tracker_collection_names
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+         COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${MAIAConfig_DIR}:$ENV{PYTHONPATH}
+                 python3 ${CMAKE_CURRENT_LIST_DIR}/check_tracker_collections.py
+)
+
 add_test(NAME reco_help
          WORKING_DIRECTORY ${MAIAConfig_DIR}
          COMMAND k4run --help reco_steer.py

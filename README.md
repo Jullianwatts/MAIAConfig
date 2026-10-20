@@ -226,7 +226,10 @@ The two flavours are drop-in replacements for one another: whichever runs, the
 hits and hit <-> sim-hit links are written to the same `VXDBarrelHits`,
 `VXDBarrelHitsRelations`, ... collections with the same `TrackerHitPlane` and
 link types, so the coning, double-layer filtering, hit merging and tracking
-downstream are unaffected by the choice.
+downstream are unaffected by the choice. These names are defined once, in
+`Common/tracker_collections.py`, for both digitisers and the algorithms reading
+their output, and the `tracker_collection_names` test checks that the two
+digitisers write exactly the collections the downstream algorithms read.
 
 With `--storeFiredPixels`, the realistic digitiser also writes the pixels that
 make up each hit, to study cluster shapes:
