@@ -107,6 +107,7 @@ The full set is:
 | `--doRealisticDigiVertex` | digi | `False` | Digitise the vertex detector with the realistic `MuonCVXDDigitiser` (charge transport in the sensor) instead of the parametric `DDPlanarDigi` smearing. The output collection names are unchanged (see below). |
 | `--doRealisticDigiInner` | digi | `False` | Same for the inner tracker. |
 | `--doRealisticDigiOuter` | digi | `False` | Same for the outer tracker. |
+| `--storeFiredPixels` | digi | `False` | With the realistic tracker digitisation, also write the fired pixels of every hit and the hit -> pixel links (see below). |
 | `--doTrackerConing` | digi + reco | `False` | Cone-filter the tracker hits around the signal MC particles (BIB cleaning). When enabled, the digi step writes the `…Coned` hit collections and the merger reads them before tracking. |
 | `--doCaloConing` | digi | `False` | Cone-filter the calorimeter hits around the signal MC particles before the BIB hit selection. When enabled, the selectors threshold the `…Coned` collections instead of the reconstructed hits; either way they write the `…Sel` collections that Pandora consumes. |
 | `--caloConeWidth` | digi | `0.6` | Half-opening angle [rad] of the calorimeter cones, the same for every ECal/HCal region (used with `--doCaloConing`). |
@@ -225,10 +226,22 @@ The two flavours are drop-in replacements for one another: whichever runs, the
 hits and hit <-> sim-hit links are written to the same `VXDBarrelHits`,
 `VXDBarrelHitsRelations`, ... collections with the same `TrackerHitPlane` and
 link types, so the coning, double-layer filtering, hit merging and tracking
-downstream are unaffected by the choice. The realistic digitiser additionally
-writes the local-frame sim hits (`VertexBarrel`, `InnerTrackerBarrel`, ...) and
-the raw-hit links (`VXDBarrelRawHitRelations`, ...), which nothing downstream
-reads.
+downstream are unaffected by the choice. These names are defined once, in
+`Common/tracker_collections.py`, for both digitisers and the algorithms reading
+their output, and the `tracker_collection_names` test checks that the two
+digitisers write exactly the collections the downstream algorithms read.
+
+With `--storeFiredPixels`, the realistic digitiser also writes the pixels that
+make up each hit, to study cluster shapes:
+
+| Collection | Type | Content |
+|---|---|---|
+| `VXDBarrelPixels`, `VXDEndcapPixels`, `ITBarrelPixels`, ... | `SimTrackerHit` | Fired pixels: position in pixel units in the local (u, v) frame of the sensor (z = 0), digitised charge in electrons as `EDep`, pixel time, and the MC particle and flags of the hit's `SimTrackerHit` |
+| `VXDBarrelRawHitRelations`, ... | `TrackerHit` -> `SimTrackerHit` links | From each hit to its fired pixels, weight 1/(number of pixels) |
+
+Without the flag both collections are written empty. Like the other tracker hit
+collections, they are dropped from the reconstruction output when background is
+overlaid, unless `--keepEverything` is given.
 
 Note that `MuonCVXDDigitiser` does not apply the time window that
 `DDPlanarDigi` uses (`TimeWindowMin`/`TimeWindowMax`): out-of-time hits are kept

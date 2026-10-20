@@ -1,5 +1,6 @@
 from GaudiKernel.Constants import INFO, WARNING
 from Configurables import FilterDoubleLayerHits
+from Common.tracker_collections import hit_collection
 
 def filterDL_vertexBarrel_cfg():
     """
@@ -10,8 +11,8 @@ def filterDL_vertexBarrel_cfg():
         DoubleLayerCuts = ["0", "1", "2.0", "35.0", "2", "3", "1.7", "18.0", "4", "5", "1.5", "10.0", "6", "7", "1.4", "6.5"],
         FillHistograms = False,
         SubDetectorName = "Vertex",
-        InputCollection = ["VXDBarrelHits"],
-        OutputCollection = "VXDBarrelHits_DLFiltered",
+        InputCollection = [hit_collection("VXDBarrel")],
+        OutputCollection = hit_collection("VXDBarrel") + "_DLFiltered",
         OutputLevel = INFO
     )
 
@@ -24,7 +25,7 @@ def filterDL_vertexEndcap_cfg():
         DoubleLayerCuts = ["0", "1", "2.2", "8.0", "2", "3", "1.4", "2.8", "4", "5", "0.86", "0.7", "6", "7", "0.7", "0.3"],
         FillHistograms = False,
         SubDetectorName = "Vertex",
-        InputCollection = ["VXDEndcapHits"],
-        OutputCollection = "VXDEndcapHits_DLFiltered",
+        InputCollection = [hit_collection("VXDEndcap")],
+        OutputCollection = hit_collection("VXDEndcap") + "_DLFiltered",
         OutputLevel = INFO
     )
