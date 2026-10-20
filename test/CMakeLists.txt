@@ -26,6 +26,21 @@ add_test(NAME reco
 )
 set_property(TEST reco APPEND PROPERTY DEPENDS digi)
 
+# Realistic digitisation of every tracker subdetector, with the fired pixels stored
+add_test(NAME digi_realistic
+         WORKING_DIRECTORY ${MAIAConfig_DIR}
+         COMMAND k4run digi_steer.py --DD4hepXMLFile=${DETECTOR}
+                 --doRealisticDigiVertex --doRealisticDigiInner --doRealisticDigiOuter --storeFiredPixels
+                 --outputFile digi_realistic_output.edm4hep.root
+)
+set_property(TEST digi_realistic APPEND PROPERTY DEPENDS ddsim)
+
+add_test(NAME check_fired_pixels
+         WORKING_DIRECTORY ${MAIAConfig_DIR}
+         COMMAND python3 ${CMAKE_CURRENT_LIST_DIR}/check_fired_pixels.py digi_realistic_output.edm4hep.root
+)
+set_property(TEST check_fired_pixels APPEND PROPERTY DEPENDS digi_realistic)
+
 add_test(NAME digi_help
          WORKING_DIRECTORY ${MAIAConfig_DIR}
          COMMAND k4run --help digi_steer.py
@@ -38,6 +53,13 @@ add_test(NAME pandora_settings_path
          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
          COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${MAIAConfig_DIR}
                  python3 ${CMAKE_CURRENT_LIST_DIR}/check_pandora_settings.py
+)
+
+# The parametric and realistic tracker digitisers must write the collections the tracking reads
+add_test(NAME tracker_collection_names
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+         COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${MAIAConfig_DIR}:$ENV{PYTHONPATH}
+                 python3 ${CMAKE_CURRENT_LIST_DIR}/check_tracker_collections.py
 )
 
 add_test(NAME reco_help

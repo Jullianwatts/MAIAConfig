@@ -1,6 +1,7 @@
 from GaudiKernel.Constants import INFO, WARNING
 from Configurables import DDPlanarDigi
 from Common.overlay_utils import overlay_input
+from Common.tracker_collections import hit_collection, hit_relation_collection
 
 def OTBarrel_cfg(args):
     """
@@ -20,8 +21,8 @@ def OTBarrel_cfg(args):
         TimeWindowMin = [-0.18],
         UseTimeWindow = True,
         SimTrackHitCollectionName = inputHitCollections,
-        SimTrkHitRelCollection = ["OTBarrelHitsRelations"],
-        TrackerHitCollectionName = ["OTBarrelHits"],
+        SimTrkHitRelCollection = [hit_relation_collection("OTBarrel")],
+        TrackerHitCollectionName = [hit_collection("OTBarrel")],
         ForceHitsOntoSurface = True,
         OutputLevel = INFO
     )
@@ -44,8 +45,8 @@ def OTEndcap_cfg(args):
         TimeWindowMin = [-0.18],
         UseTimeWindow = True,
         SimTrackHitCollectionName = inputHitCollections,
-        SimTrkHitRelCollection = ["OTEndcapHitsRelations"],
-        TrackerHitCollectionName = ["OTEndcapHits"],
+        SimTrkHitRelCollection = [hit_relation_collection("OTEndcap")],
+        TrackerHitCollectionName = [hit_collection("OTEndcap")],
         ForceHitsOntoSurface = True,
         OutputLevel = INFO
     )

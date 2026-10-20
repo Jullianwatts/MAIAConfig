@@ -1,6 +1,7 @@
 from GaudiKernel.Constants import INFO, WARNING
 from Configurables import DDPlanarDigi
 from Common.overlay_utils import overlay_input
+from Common.tracker_collections import hit_collection, hit_relation_collection
 
 def ITBarrel_cfg(args):
     """
@@ -20,8 +21,8 @@ def ITBarrel_cfg(args):
         TimeWindowMin = [-0.18],
         UseTimeWindow = True,
         SimTrackHitCollectionName = inputHitCollections,
-        SimTrkHitRelCollection = ["ITBarrelHitsRelations"],
-        TrackerHitCollectionName = ["ITBarrelHits"],
+        SimTrkHitRelCollection = [hit_relation_collection("ITBarrel")],
+        TrackerHitCollectionName = [hit_collection("ITBarrel")],
         ForceHitsOntoSurface = True,
         OutputLevel = INFO
     )
@@ -44,8 +45,8 @@ def ITEndcap_cfg(args):
         TimeWindowMin = [-0.18],
         UseTimeWindow = True,
         SimTrackHitCollectionName = inputHitCollections,
-        SimTrkHitRelCollection = ["ITEndcapHitsRelations"],
-        TrackerHitCollectionName = ["ITEndcapHits"],
+        SimTrkHitRelCollection = [hit_relation_collection("ITEndcap")],
+        TrackerHitCollectionName = [hit_collection("ITEndcap")],
         ForceHitsOntoSurface = True,
         OutputLevel = INFO
     )
