@@ -87,6 +87,14 @@ def get_digi_args():
         default=False,
     )
 
+    parser.add_argument(
+        "--storeFiredPixels",
+        help="With the realistic tracker digitisation, also write the fired pixels of every hit "
+             "(<prefix>Pixels) and the hit -> pixel links (<prefix>RawHitRelations)",
+        action="store_true",
+        default=False,
+    )
+
     # Shared with reco_args (the merger reads the coned hits when enabled).
     add_argument_once(
         parser,

@@ -14,17 +14,24 @@ _INNER_TRACKER_PIXEL_SIZE_U = 0.025  # mm
 _INNER_TRACKER_PIXEL_SIZE_V = 0.312  # mm
 
 
-def _inner_tracker_digitiser(name, input_collection, sim_local_collection, hit_collection, relation_collection, raw_relation_collection, layer_ids):
+def _inner_tracker_digitiser(name, input_collection, subdetector, prefix, layer_ids, args):
+    """
+    MuonCVXDDigitiser for one sub-detector. The output collections are named after prefix:
+    <prefix>Hits and <prefix>HitsRelations (hits and hit -> sim-hit links, as for DDPlanarDigi),
+    <prefix>Pixels and <prefix>RawHitRelations (fired pixels and hit -> pixel links, filled with
+    --storeFiredPixels).
+    """
     return MuonCVXDDigitiser(
         name,
         CollectionName = input_collection,
         EventHeader = ["EventHeader"],
-        SimHitLocCollectionName = [sim_local_collection],
-        OutputCollectionName = [hit_collection],
-        RelationColName = [relation_collection],
-        RawHitsLinkColName = [raw_relation_collection],
-        SubDetectorName = sim_local_collection,
+        SimHitLocCollectionName = [prefix + "Pixels"],
+        OutputCollectionName = [prefix + "Hits"],
+        RelationColName = [prefix + "HitsRelations"],
+        RawHitsLinkColName = [prefix + "RawHitRelations"],
+        SubDetectorName = subdetector,
         LayerIDs = layer_ids,
+        StoreFiredPixels = getattr(args, "storeFiredPixels", False),
         PixelSizeX = _INNER_TRACKER_PIXEL_SIZE_U,
         PixelSizeY = _INNER_TRACKER_PIXEL_SIZE_V,
         OutputLevel = INFO,
@@ -40,10 +47,9 @@ def ITBarrel_cfg(args):
         "InnerBarrelDigitiser",
         inputHitCollections,
         "InnerTrackerBarrel",
-        "ITBarrelHits",
-        "ITBarrelHitsRelations",
-        "ITBarrelRawHitRelations",
+        "ITBarrel",
         _INNER_TRACKER_BARREL_LAYER_IDS,
+        args,
     )
 
 
@@ -56,8 +62,7 @@ def ITEndcap_cfg(args):
         "InnerEndcapDigitiser",
         inputHitCollections,
         "InnerTrackerEndcap",
-        "ITEndcapHits",
-        "ITEndcapHitsRelations",
-        "ITEndcapRawHitRelations",
+        "ITEndcap",
         _INNER_TRACKER_ENDCAP_LAYER_IDS,
+        args,
     )
