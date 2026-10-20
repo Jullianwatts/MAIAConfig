@@ -21,12 +21,11 @@ def CKFTracker_cfg(args):
     return CKFTrackingAlg(
         "Reconstructor",
         RunCKF = True,
-        CKF_Chi2CutOff = 12,
+        CKF_Chi2CutOff = 10 if args.tracking3D else 12,
         # Hits with chi2CutOff <= local chi2 < chi2CutOffOutlier are kept as outliers; above -> hole.
         CKF_Chi2CutOffOutlier = 25,
         # CKF branch stopper: terminate fake branches early instead of extending
-        # them through the whole detector, aligned with the downstream selection
-        # (>= 8 hits, <= 2 holes).
+        # them through the whole detector.
         UseBranchStopper = True,
         BranchStopper_MaxHoles = 1,
         BranchStopper_MaxOutliers = 1,
@@ -42,14 +41,14 @@ def CKFTracker_cfg(args):
         SeedFinding_SigmaScattering = 50,
         SeedFinding_CollisionRegion = 6,
         SeedFinding_RadLengthPerSeed = 0.1,
-        SeedFinding_DoubletTimeCutNSigma = 3,
-        SeedFinding_TripletTimeChi2Max = 12,
+        SeedFinding_DoubletTimeCutNSigma = -1 if args.tracking3D else 3,
+        SeedFinding_TripletTimeChi2Max = -1 if args.tracking3D else 12,
         SeedFinding_InteractionPointCut = True,
         SeedFilter_CompatSeedWeight = 0,
         InitialTrackError_QOverP = 0.03,
         SeedingSensorsCellIDs = ["system:1", "system:2,layer:1|3|5"],
         SeedFinding_zBinEdges = ["-599", "-240", "-160", "-100", "-70", "-20", "20", "70", "100", "160", "240", "599"],
-        UseHitTimeInCKF = True,
+        UseHitTimeInCKF = not args.tracking3D,
         HitTimeResolutions = {"system:1|2": 0.03, "system:3|4|5|6": 0.06},
         AddEndcapCaloState = True,
         OutputTrackCollection = "AllTracks",
