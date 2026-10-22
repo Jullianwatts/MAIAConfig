@@ -1,13 +1,13 @@
 from GaudiKernel.Constants import INFO, WARNING
-from Configurables import RealisticCaloDigiScinPpd, RealisticCaloRecoScinPpd
+from Configurables import DigitiserScinPpdNpe, CellEnergyCalibratorScinPpdNpe
 from Common.overlay_utils import overlay_input
 
 def HCalBarrelDigi_cfg(args):
     """
     Create a new HCal barrel digitiser instance with the given parameters.
     """
-    inputHitCollections = overlay_input("HCalBarrelCollection", args)
-    return RealisticCaloDigiScinPpd(
+    inputHitCollection = overlay_input("HCalBarrelCollection", args)[0]
+    return DigitiserScinPpdNpe(
         "HCalBarrelDigi",
         calibration_mip = 0.0004925,
         threshold = 0.5,
@@ -22,9 +22,10 @@ def HCalBarrelDigi_cfg(args):
         ppd_npix_uncert = 0.0,
         ppd_pix_spread = 0.0,
         CaloType = "had", CaloID = "hcal", CaloLayout = "barrel",
-        inputHitCollections = inputHitCollections,
-        outputHitCollections = ["HcalBarrelCollectionDigi"],
-        outputRelationCollections = ["HcalBarrelRelationsSimDigi"],
+        inputHitCollection = inputHitCollection,
+        inputHeaderCollection = "EventHeader",
+        outputHitCollection = "HcalBarrelCollectionDigi",
+        outputRelationCollection = "HcalBarrelRelationsSimDigi",
         OutputLevel = INFO
     )
 
@@ -32,15 +33,15 @@ def HCalBarrelReco_cfg():
     """
     Create a new HCal barrel reco instance with the given parameters.
     """
-    return RealisticCaloRecoScinPpd(
+    return CellEnergyCalibratorScinPpdNpe(
         "HCalBarrelReco",
         calibration_factorsMipGev = [0.0287783798145],
         calibration_layergroups = [100],
         ppd_mipPe = 15.0,
         ppd_npix = 2000,
-        inputLinkCollections = ["HcalBarrelRelationsSimDigi"],
-        outputHitCollections = ["HcalBarrelCollectionRec"],
-        outputRelationCollections = ["HcalBarrelRelationsSimRec"],
+        inputLinkCollection = "HcalBarrelRelationsSimDigi",
+        outputHitCollection = "HcalBarrelCollectionRec",
+        outputRelationCollection = "HcalBarrelRelationsSimRec",
         OutputLevel = INFO
     )
 
@@ -48,8 +49,8 @@ def HCalEndcapDigi_cfg(args):
     """
     Create a new HCal endcap digitiser instance with the given parameters.
     """
-    inputHitCollections = overlay_input("HCalEndcapCollection", args)
-    return RealisticCaloDigiScinPpd(
+    inputHitCollection = overlay_input("HCalEndcapCollection", args)[0]
+    return DigitiserScinPpdNpe(
         "HCalEndcapDigi",
         calibration_mip = 0.0004725,
         threshold = 0.5,
@@ -64,9 +65,10 @@ def HCalEndcapDigi_cfg(args):
         ppd_npix_uncert = 0.0,
         ppd_pix_spread = 0.0,
         CaloType = "had", CaloID = "hcal", CaloLayout = "endcap",
-        inputHitCollections = inputHitCollections,
-        outputHitCollections = ["HcalEndcapCollectionDigi"],
-        outputRelationCollections = ["HcalEndcapRelationsSimDigi"],
+        inputHitCollection = inputHitCollection,
+        inputHeaderCollection = "EventHeader",
+        outputHitCollection = "HcalEndcapCollectionDigi",
+        outputRelationCollection = "HcalEndcapRelationsSimDigi",
         OutputLevel = INFO
     )
 
@@ -74,14 +76,14 @@ def HCalEndcapReco_cfg():
     """
     Create a new HCal endcap reco instance with the given parameters.
     """
-    return RealisticCaloRecoScinPpd(
+    return CellEnergyCalibratorScinPpdNpe(
         "HCalEndcapReco",
         calibration_factorsMipGev = [0.0285819096797],
         calibration_layergroups = [100],
         ppd_mipPe = 15.0,
         ppd_npix = 2000,
-        inputLinkCollections = ["HcalEndcapRelationsSimDigi"],
-        outputHitCollections = ["HcalEndcapCollectionRec"],
-        outputRelationCollections = ["HcalEndcapRelationsSimRec"],
+        inputLinkCollection = "HcalEndcapRelationsSimDigi",
+        outputHitCollection = "HcalEndcapCollectionRec",
+        outputRelationCollection = "HcalEndcapRelationsSimRec",
         OutputLevel = INFO
     )
