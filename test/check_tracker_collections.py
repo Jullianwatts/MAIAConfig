@@ -5,9 +5,9 @@ and that these are the collections the downstream algorithms read.
 The downstream algorithms (coning, double-layer filtering, hit merging, tracking) are configured
 once, so whichever digitiser runs for a subdetector must produce exactly their input collections.
 
-The realistic digitisers, the coners and the double-layer filter are MuonCollider-specific
-components that not every release image ships. Whatever is missing is reported and left out of
-the checks; the parametric digitisers and the mergers come from upstream and are required.
+The realistic digitisers (MuonCVXDDigitiser) and the double-layer filter (FilterDoubleLayerHits,
+which has no Gaudi port yet) are not shipped by every release image. Whatever is missing is
+reported and left out of the checks; everything else is required.
 
 Usage: PYTHONPATH=<MAIAConfig>/MAIAConfig check_tracker_collections.py
 """
@@ -18,6 +18,7 @@ import sys
 from GaudiKernel.Configurable import Configurable
 
 from TrackerDigi import tracking_inner, tracking_outer, tracking_vertex
+from TrackerDigi.coning import tracker_coner_cfgs
 from Tracking.mergers import mergehits_cfg, mergehitsrelations_cfg
 
 skipped = []
@@ -35,7 +36,6 @@ def optional(module_name):
 realistic_vertex = optional("TrackerDigi.realistic_vertex")
 realistic_inner = optional("TrackerDigi.realistic_inner")
 realistic_outer = optional("TrackerDigi.realistic_outer")
-coner_module = optional("TrackerDigi.coning")
 dl_module = optional("Tracking.filterDL_vertex")
 
 # subdetector prefix: (parametric module, realistic module)
@@ -53,15 +53,21 @@ def args(coning=False):
                               doTrackerConing=coning)
 
 
+def names(value):
+    """A collection property as a list: an algorithm that declares a single collection has a
+    plain string here, one that declares several has a list."""
+    return [value] if isinstance(value, str) else list(value)
+
+
 def outputs(flavour, prefix):
     """(hit collections, relation collections) written by the digitiser of a subdetector."""
     parametric_module, realistic_module = MODULES[prefix]
     if flavour == "parametric":
         alg = getattr(parametric_module, f"{prefix}_cfg")(args())
-        result = list(alg.TrackerHitCollectionName), list(alg.SimTrkHitRelCollection)
+        result = names(alg.TrackerHitCollectionName), names(alg.SimTrkHitRelCollection)
     else:
         alg = getattr(realistic_module, f"{prefix}_cfg")(args())
-        result = list(alg.OutputCollectionName), list(alg.RelationColName)
+        result = names(alg.OutputCollectionName), names(alg.RelationColName)
     # The two flavours use the same algorithm names, which Gaudi only allows once per job:
     # forget this one before the other flavour is created
     Configurable.allConfigurables.pop(alg.name(), None)
@@ -86,21 +92,20 @@ coned_relations = {name + "Coned" for name in produced["relations"]}
 
 
 def require(consumer, inputs, available):
-    missing = [name for name in inputs if name not in available]
+    missing = [name for name in names(inputs) if name not in available]
     if missing:
         failures.append(f"{consumer} reads {missing}, which no digitiser writes")
 
 
-if coner_module:
-    for coner in coner_module.tracker_coner_cfgs(args()):
-        require(coner.name(), coner.TrackerHitInputCollections, produced["hits"])
-        require(coner.name(), coner.TrackerHitInputRelations, produced["relations"])
-        for name in coner.TrackerHitOutputCollections:
-            coned_hits.discard(name)  # every coned collection must be written by a coner
-        for name in coner.TrackerHitOutputRelations:
-            coned_relations.discard(name)
-    if coned_hits or coned_relations:
-        failures.append(f"no coner writes {sorted(coned_hits | coned_relations)}")
+for coner in tracker_coner_cfgs(args()):
+    require(coner.name(), coner.TrackerHitInputCollections, produced["hits"])
+    require(coner.name(), coner.TrackerHitInputRelations, produced["relations"])
+    for name in names(coner.TrackerHitOutputCollections):
+        coned_hits.discard(name)  # every coned collection must be written by a coner
+    for name in names(coner.TrackerHitOutputRelations):
+        coned_relations.discard(name)
+if coned_hits or coned_relations:
+    failures.append(f"no coner writes {sorted(coned_hits | coned_relations)}")
 
 for coning in (False, True):
     suffix = "Coned" if coning else ""
