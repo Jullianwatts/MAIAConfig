@@ -5,6 +5,9 @@ and that these are the collections the downstream algorithms read.
 The downstream algorithms (coning, double-layer filtering, hit merging, tracking) are configured
 once, so whichever digitiser runs for a subdetector must produce exactly their input collections.
 
+The realistic digitisers need MuonCVXDDigitiser, which not every release image ships: without it
+only the parametric digitisers are checked.
+
 Usage: PYTHONPATH=<MAIAConfig>/MAIAConfig check_tracker_collections.py
 """
 import argparse
@@ -12,8 +15,12 @@ import sys
 
 from GaudiKernel.Configurable import Configurable
 
-from TrackerDigi import realistic_inner, realistic_outer, realistic_vertex
 from TrackerDigi import tracking_inner, tracking_outer, tracking_vertex
+try:
+    from TrackerDigi import realistic_inner, realistic_outer, realistic_vertex
+except ImportError as error:
+    print(f"realistic tracker digitisers not available ({error}): checking the parametric ones only")
+    realistic_inner = realistic_outer = realistic_vertex = None
 from TrackerDigi.coning import tracker_coner_cfgs
 from Tracking.filterDL_vertex import filterDL_vertexBarrel_cfg, filterDL_vertexEndcap_cfg
 from Tracking.mergers import mergehits_cfg, mergehitsrelations_cfg
@@ -50,10 +57,14 @@ def outputs(flavour, prefix):
 
 produced = {"hits": set(), "relations": set()}
 for prefix in MODULES:
-    parametric, realistic = outputs("parametric", prefix), outputs("realistic", prefix)
-    print(f"{prefix:10s} parametric {parametric}  realistic {realistic}")
-    if parametric != realistic:
-        failures.append(f"{prefix}: parametric {parametric} and realistic {realistic} digitisers write different collections")
+    parametric = outputs("parametric", prefix)
+    if MODULES[prefix][1] is None:
+        print(f"{prefix:10s} parametric {parametric}")
+    else:
+        realistic = outputs("realistic", prefix)
+        print(f"{prefix:10s} parametric {parametric}  realistic {realistic}")
+        if parametric != realistic:
+            failures.append(f"{prefix}: parametric {parametric} and realistic {realistic} digitisers write different collections")
     produced["hits"].update(parametric[0])
     produced["relations"].update(parametric[1])
 

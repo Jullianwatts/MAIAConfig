@@ -1,6 +1,18 @@
 set(DETECTOR $ENV{K4GEO}/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml)
 set(MAIAConfig_DIR ${CMAKE_CURRENT_LIST_DIR}/../MAIAConfig)
 
+# The realistic (charge-transport) tracker digitisation needs MuonCVXDDigitiser, which not
+# every release image ships. Probe for it and leave the tests that need it out when it is absent.
+execute_process(COMMAND python3 -c "from Configurables import MuonCVXDDigitiser"
+                RESULT_VARIABLE realistic_digi_probe
+                OUTPUT_QUIET ERROR_QUIET)
+if(realistic_digi_probe STREQUAL "0")
+  set(HAVE_REALISTIC_TRACKER_DIGI TRUE)
+else()
+  set(HAVE_REALISTIC_TRACKER_DIGI FALSE)
+  message(STATUS "MuonCVXDDigitiser not available: skipping the realistic tracker digitisation tests")
+endif()
+
 # Simulate a few single-particle events to feed the digitisation/reconstruction
 add_test(NAME ddsim
          WORKING_DIRECTORY ${MAIAConfig_DIR}
@@ -27,19 +39,21 @@ add_test(NAME reco
 set_property(TEST reco APPEND PROPERTY DEPENDS digi)
 
 # Realistic digitisation of every tracker subdetector, with the fired pixels stored
-add_test(NAME digi_realistic
-         WORKING_DIRECTORY ${MAIAConfig_DIR}
-         COMMAND k4run digi_steer.py --DD4hepXMLFile=${DETECTOR}
-                 --doRealisticDigiVertex --doRealisticDigiInner --doRealisticDigiOuter --storeFiredPixels
-                 --outputFile digi_realistic_output.edm4hep.root
-)
-set_property(TEST digi_realistic APPEND PROPERTY DEPENDS ddsim)
+if(HAVE_REALISTIC_TRACKER_DIGI)
+  add_test(NAME digi_realistic
+           WORKING_DIRECTORY ${MAIAConfig_DIR}
+           COMMAND k4run digi_steer.py --DD4hepXMLFile=${DETECTOR}
+                   --doRealisticDigiVertex --doRealisticDigiInner --doRealisticDigiOuter --storeFiredPixels
+                   --outputFile digi_realistic_output.edm4hep.root
+  )
+  set_property(TEST digi_realistic APPEND PROPERTY DEPENDS ddsim)
 
-add_test(NAME check_fired_pixels
-         WORKING_DIRECTORY ${MAIAConfig_DIR}
-         COMMAND python3 ${CMAKE_CURRENT_LIST_DIR}/check_fired_pixels.py digi_realistic_output.edm4hep.root
-)
-set_property(TEST check_fired_pixels APPEND PROPERTY DEPENDS digi_realistic)
+  add_test(NAME check_fired_pixels
+           WORKING_DIRECTORY ${MAIAConfig_DIR}
+           COMMAND python3 ${CMAKE_CURRENT_LIST_DIR}/check_fired_pixels.py digi_realistic_output.edm4hep.root
+  )
+  set_property(TEST check_fired_pixels APPEND PROPERTY DEPENDS digi_realistic)
+endif()
 
 add_test(NAME digi_help
          WORKING_DIRECTORY ${MAIAConfig_DIR}
@@ -55,7 +69,8 @@ add_test(NAME pandora_settings_path
                  python3 ${CMAKE_CURRENT_LIST_DIR}/check_pandora_settings.py
 )
 
-# The parametric and realistic tracker digitisers must write the collections the tracking reads
+# The parametric and realistic tracker digitisers must write the collections the tracking reads.
+# Without MuonCVXDDigitiser the check covers the parametric digitisers only.
 add_test(NAME tracker_collection_names
          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
          COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${MAIAConfig_DIR}:$ENV{PYTHONPATH}
