@@ -135,12 +135,16 @@ def pandoraPFA_cfg(the_args=None):
     )
 
 def fastJet_cfg():
+    # The algorithm and the clustering mode are named by a string, with their numeric
+    # parameters in a separate list: R = 0.4 for anti-kt, minPt = 5 GeV for "Inclusive".
     return FastJetAlg("AntiKt FastJet",
-        algorithm = ["antikt_algorithm", "0.4"],
-        clusteringMode = ["Inclusive", "5"],
-        jetOut = ["JetOut"],
-        recParticleIn = ["PandoraPFOs"],
-        recParticleOut = ["UsedPFOs"],
+        algorithm = "antikt_algorithm",
+        algorithmParameters = [0.4],
+        clusteringMode = "Inclusive",
+        clusteringParams = [5.0],
+        jetOut = "JetOut",
+        recParticleIn = "PandoraPFOs",
+        recParticleOut = "UsedPFOs",
         recombinationScheme = "E_scheme",
         OutputLevel = INFO
     )

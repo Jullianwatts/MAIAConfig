@@ -30,8 +30,8 @@ domain (following the CLDConfig convention):
 - `TrackerDigi/` — tracker digitisation (vertex/inner/outer) and tracker-hit
   cone filtering (`coning.py`).
 - `Tracking/` — hit merging, CKF track reconstruction, and double-layer filtering.
-- `Overlay/` — beam-induced-background (`overlay_BIB.py`) and incoherent-pair
-  (`overlay_IP.py`) overlay.
+- `Overlay/` — background overlay (`overlay.py`), covering both the
+  beam-induced background and the incoherent pairs.
 - `ParticleFlow/` — Pandora PFA and jet clustering.
 - `Diagnostics/` — tracking performance monitoring.
 - `PandoraSettings/` — Pandora steering and likelihood data XMLs. These are
@@ -101,9 +101,13 @@ The full set is:
 | `--OverlayFullPathToMuPlus` | digi | `/path/to/muplus/` | Directory of the μ⁺ BIB overlay files (used with `--doOverlayFull`). |
 | `--OverlayFullPathToMuMinus` | digi | `/path/to/muminus/` | Directory of the μ⁻ BIB overlay files (used with `--doOverlayFull`). |
 | `--OverlayFullNumberBackground` | digi | `1667` | Number of BIB background files overlaid (used with `--doOverlayFull`). |
-| `--doOverlayIP` | digi + reco | `False` | Overlay incoherent pairs. When both overlays are enabled they are chained (BIB then IP) before digitisation. In the reco step it only acts as a flag: when set, all tracker and calorimeter hit collections are dropped from the reconstruction output (see below). |
-| `--OverlayIPBackgroundFileNames` | digi | `[/path/to/pairs.slcio]` | Incoherent-pair overlay input file(s) (used with `--doOverlayIP`). |
+| `--doOverlayIP` | digi + reco | `False` | Overlay incoherent pairs. When both overlays are enabled they are overlaid together by a single algorithm (see below). In the reco step it only acts as a flag: when set, all tracker and calorimeter hit collections are dropped from the reconstruction output (see below). |
+| `--OverlayIPBackgroundFileNames` | digi | `[/path/to/pairs.edm4hep.root]` | Incoherent-pair overlay input file(s), or the directories holding them (used with `--doOverlayIP`). Combined with `--doOverlayFull` the paths are taken as directories, see below. |
 | `--doFilterDL` | digi | `False` | Double-layer hit filtering in the vertex detector. |
+| `--doRealisticDigiVertex` | digi | `False` | Digitise the vertex detector with the realistic `MuonCVXDDigitiser` (charge transport in the sensor) instead of the parametric `DDPlanarDigi` smearing. The output collection names are unchanged (see below). |
+| `--doRealisticDigiInner` | digi | `False` | Same for the inner tracker. |
+| `--doRealisticDigiOuter` | digi | `False` | Same for the outer tracker. |
+| `--storeFiredPixels` | digi | `False` | With the realistic tracker digitisation, also write the fired pixels of every hit and the hit -> pixel links (see below). |
 | `--doTrackerConing` | digi + reco | `False` | Cone-filter the tracker hits around the signal MC particles (BIB cleaning). When enabled, the digi step writes the `…Coned` hit collections and the merger reads them before tracking. |
 | `--doCaloConing` | digi | `False` | Cone-filter the calorimeter hits around the signal MC particles before the BIB hit selection. When enabled, the selectors threshold the `…Coned` collections instead of the reconstructed hits; either way they write the `…Sel` collections that Pandora consumes. |
 | `--caloConeWidth` | digi | `0.6` | Half-opening angle [rad] of the calorimeter cones, the same for every ECal/HCal region (used with `--doCaloConing`). |
@@ -153,6 +157,29 @@ k4run reco_steer.py --findGNNTracks --modelBase /path/to/onnx_files \
       --GNNDirectFilterer.NHitsTotal 3
 ```
 
+### Overlaying BIB and incoherent pairs together
+
+Both background sources are overlaid by one `OverlayTimingRandomMix` instance
+(`Overlay/overlay.py`), which reads the simulated hit collections and writes the
+`Overlay*` collections the digitisers consume. Each source is a separate
+background group: μ⁺ BIB, μ⁻ BIB, and — with `--doOverlayIP` — the incoherent
+pairs, one pair event per signal event.
+
+They are deliberately *not* run as two chained algorithms. A second overlay
+instance reading the `Overlay*` output of the first would look its background
+collections up in the pair files under those output names, which do not exist
+there, so no pair hit would be overlaid at all; and it would index the signal
+`MCParticles` collection with the unset particle references the first instance
+leaves on the background calorimeter contributions, which reads out of bounds
+and segfaults.
+
+One consequence for `--OverlayIPBackgroundFileNames`: the algorithm decides once,
+from the first entry of its file list, whether the whole list names files or
+directories, and the BIB samples can only be given as directories. So when
+`--doOverlayFull` is on as well, each pair path is replaced by the directory that
+contains it, and the pair event is drawn from every `.root` file in there. Given
+on its own, `--doOverlayIP` uses exactly the files listed.
+
 ### Hit collections in the overlay output
 
 Running with background (`--doOverlayFull` and/or `--doOverlayIP`) makes the hit
@@ -177,6 +204,48 @@ even with an overlay enabled:
 ```bash
 k4run reco_steer.py --doOverlayFull --keepEverything
 ```
+
+### Realistic tracker digitisation
+
+By default every tracker subdetector is digitised with `DDPlanarDigi`, which
+smears the simulated hit position and time with the parametrised resolutions in
+`TrackerDigi/tracking_{vertex,inner,outer}.py`. Each subdetector can instead be
+digitised with `MuonCVXDDigitiser` (`TrackerDigi/realistic_{vertex,inner,outer}.py`),
+which transports the deposited charge through the sensor and clusters the fired
+pixels:
+
+```bash
+# realistic vertex, parametric inner/outer
+k4run digi_steer.py --doRealisticDigiVertex
+
+# realistic everywhere
+k4run digi_steer.py --doRealisticDigiVertex --doRealisticDigiInner --doRealisticDigiOuter
+```
+
+The two flavours are drop-in replacements for one another: whichever runs, the
+hits and hit <-> sim-hit links are written to the same `VXDBarrelHits`,
+`VXDBarrelHitsRelations`, ... collections with the same `TrackerHitPlane` and
+link types, so the coning, double-layer filtering, hit merging and tracking
+downstream are unaffected by the choice. These names are defined once, in
+`Common/tracker_collections.py`, for both digitisers and the algorithms reading
+their output, and the `tracker_collection_names` test checks that the two
+digitisers write exactly the collections the downstream algorithms read.
+
+With `--storeFiredPixels`, the realistic digitiser also writes the pixels that
+make up each hit, to study cluster shapes:
+
+| Collection | Type | Content |
+|---|---|---|
+| `VXDBarrelPixels`, `VXDEndcapPixels`, `ITBarrelPixels`, ... | `SimTrackerHit` | Fired pixels: position in pixel units in the local (u, v) frame of the sensor (z = 0), digitised charge in electrons as `EDep`, pixel time, and the MC particle and flags of the hit's `SimTrackerHit` |
+| `VXDBarrelRawHitRelations`, ... | `TrackerHit` -> `SimTrackerHit` links | From each hit to its fired pixels, weight 1/(number of pixels) |
+
+Without the flag both collections are written empty. Like the other tracker hit
+collections, they are dropped from the reconstruction output when background is
+overlaid, unless `--keepEverything` is given.
+
+Note that `MuonCVXDDigitiser` does not apply the time window that
+`DDPlanarDigi` uses (`TimeWindowMin`/`TimeWindowMax`): out-of-time hits are kept
+in the output when the realistic digitisation is enabled.
 
 ### BIB hit cleaning
 

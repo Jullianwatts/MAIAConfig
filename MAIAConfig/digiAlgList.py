@@ -9,20 +9,26 @@ def makeDigiAlgList(the_args):
     from Common.event_counter import event_counter_cfg
     algList.append(event_counter_cfg())
 
-    # BIB Overlay
-    if the_args.doOverlayFull:
-        from Overlay.overlay_BIB import overlay_full_cfg
-        algList.append(overlay_full_cfg(the_args))
+    # Background Overlay: beam-induced background (BIB) and/or incoherent pairs
+    # (IP). A single instance handles both, one background group per source.
+    if the_args.doOverlayFull or the_args.doOverlayIP:
+        from Overlay.overlay import overlay_cfg
+        algList.append(overlay_cfg(the_args))
 
-    # Incoherent Pair (IP) Overlay (chained after BIB if both are enabled)
-    if the_args.doOverlayIP:
-        from Overlay.overlay_IP import overlay_ip_cfg
-        algList.append(overlay_ip_cfg(the_args))
-
-    # Tracker Digitization
-    from TrackerDigi.tracking_vertex import VXDBarrel_cfg, VXDEndcap_cfg
-    from TrackerDigi.tracking_inner import ITBarrel_cfg, ITEndcap_cfg
-    from TrackerDigi.tracking_outer import OTBarrel_cfg, OTEndcap_cfg
+    # Tracker Digitization. Each subdetector runs either the parametric
+    # smearing or, the realistic charge-transport digitisation
+    if the_args.doRealisticDigiVertex:
+        from TrackerDigi.realistic_vertex import VXDBarrel_cfg, VXDEndcap_cfg
+    else:
+        from TrackerDigi.tracking_vertex import VXDBarrel_cfg, VXDEndcap_cfg
+    if the_args.doRealisticDigiInner:
+        from TrackerDigi.realistic_inner import ITBarrel_cfg, ITEndcap_cfg
+    else:
+        from TrackerDigi.tracking_inner import ITBarrel_cfg, ITEndcap_cfg
+    if the_args.doRealisticDigiOuter:
+        from TrackerDigi.realistic_outer import OTBarrel_cfg, OTEndcap_cfg
+    else:
+        from TrackerDigi.tracking_outer import OTBarrel_cfg, OTEndcap_cfg
     algList.append(VXDBarrel_cfg(the_args))
     algList.append(VXDEndcap_cfg(the_args))
     algList.append(ITBarrel_cfg(the_args))

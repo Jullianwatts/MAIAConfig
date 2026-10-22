@@ -2,12 +2,12 @@
 '''  Calorimeter hit cone filtering and BIB selection            '''
 '''-------------------------------------------------------------'''
 # For each calorimeter region the reconstructed hits are optionally
-# restricted to a cone around the signal MC particles (CaloConer, "...Coned",
+# restricted to a cone around the signal MC particles (CaloHitConeFilter, "...Coned",
 # enabled with --doCaloConing), then thresholded in energy and time to suppress
 # the beam-induced background (CaloHitSelector, "...Sel"). Pandora always
 # consumes the "...Sel" collections.
 from GaudiKernel.Constants import INFO
-from Configurables import CaloConer, CaloHitSelector
+from Configurables import CaloHitConeFilter, CaloHitSelector
 from Common.calo_thresholds import find_calo_thresholds
 
 # Selector max time window per technology [ns]
@@ -27,13 +27,13 @@ _CALO_REGIONS = [
 
 
 def _coner_cfg(prefix, cone_width):
-    return CaloConer(
+    return CaloHitConeFilter(
         f"{prefix}Coner",
-        MCParticleCollectionName = ["MCParticles"],
-        CaloHitCollectionName = [f"{prefix}CollectionRec"],
-        CaloRelationCollectionName = [f"{prefix}RelationsSimRec"],
-        GoodHitCollection = [f"{prefix}CollectionConed"],
-        GoodRelationCollection = [f"{prefix}RelationsSimConed"],
+        MCParticleCollectionName = "MCParticles",
+        CaloHitCollectionName = f"{prefix}CollectionRec",
+        CaloRelationCollectionName = f"{prefix}RelationsSimRec",
+        GoodHitCollection = f"{prefix}CollectionConed",
+        GoodRelationCollection = f"{prefix}RelationsSimConed",
         ConeWidth = cone_width,
         OutputLevel = INFO,
     )
@@ -45,10 +45,10 @@ def _selector_cfg(prefix, technology, args):
     suffix = "Coned" if getattr(args, "doCaloConing", False) else "Rec"
     selector = CaloHitSelector(
         f"{prefix}Selector",
-        CaloHitCollectionName = [f"{prefix}Collection{suffix}"],
-        CaloRelationCollectionName = [f"{prefix}RelationsSim{suffix}"],
-        GoodHitCollection = [f"{prefix}CollectionSel"],
-        GoodRelationCollection = [f"{prefix}RelationsSimSel"],
+        CaloHitCollectionName = f"{prefix}Collection{suffix}",
+        CaloRelationCollectionName = f"{prefix}RelationsSim{suffix}",
+        GoodHitCollection = f"{prefix}CollectionSel",
+        GoodRelationCollection = f"{prefix}RelationsSimSel",
         Nsigma = 0,
         TimeWindowMin = -0.3,
         TimeWindowMax = _SELECTOR_TIME_WINDOW_MAX[technology],
@@ -65,7 +65,7 @@ def _selector_cfg(prefix, technology, args):
 
 
 def calo_coner_cfgs(args):
-    """Return the four CaloConer instances (one per calorimeter region)."""
+    """Return the four CaloHitConeFilter instances (one per calorimeter region)."""
     cone_width = getattr(args, "caloConeWidth")
     return [_coner_cfg(prefix, cone_width) for prefix, _ in _CALO_REGIONS]
 

@@ -1,6 +1,7 @@
 from GaudiKernel.Constants import INFO, WARNING
 from Configurables import DDPlanarDigi
 from Common.overlay_utils import overlay_input
+from Common.tracker_collections import hit_collection, hit_relation_collection
 
 def ITBarrel_cfg(args):
     """
@@ -9,7 +10,8 @@ def ITBarrel_cfg(args):
     inputHitCollections = overlay_input("InnerTrackerBarrelCollection", args)
     return DDPlanarDigi(
         "InnerBarrelDigitiser",
-        CorrectTimesForPropagation = True,
+        CorrectTimesForPropagation = False,
+        CorrectTimeWindowForPropagation = True,
         IsStrip = False,
         ResolutionT = [0.06],
         ResolutionU = [0.007],
@@ -19,8 +21,8 @@ def ITBarrel_cfg(args):
         TimeWindowMin = [-0.18],
         UseTimeWindow = True,
         SimTrackHitCollectionName = inputHitCollections,
-        SimTrkHitRelCollection = ["ITBarrelHitsRelations"],
-        TrackerHitCollectionName = ["ITBarrelHits"],
+        SimTrkHitRelCollection = [hit_relation_collection("ITBarrel")],
+        TrackerHitCollectionName = [hit_collection("ITBarrel")],
         ForceHitsOntoSurface = True,
         OutputLevel = INFO
     )
@@ -32,7 +34,8 @@ def ITEndcap_cfg(args):
     inputHitCollections = overlay_input("InnerTrackerEndcapCollection", args)
     return DDPlanarDigi(
         "InnerEndcapDigitiser",
-        CorrectTimesForPropagation = True,
+        CorrectTimesForPropagation = False,
+        CorrectTimeWindowForPropagation = True,
         IsStrip = False,
         ResolutionT = [0.06],
         ResolutionU = [0.007],
@@ -42,8 +45,8 @@ def ITEndcap_cfg(args):
         TimeWindowMin = [-0.18],
         UseTimeWindow = True,
         SimTrackHitCollectionName = inputHitCollections,
-        SimTrkHitRelCollection = ["ITEndcapHitsRelations"],
-        TrackerHitCollectionName = ["ITEndcapHits"],
+        SimTrkHitRelCollection = [hit_relation_collection("ITEndcap")],
+        TrackerHitCollectionName = [hit_collection("ITEndcap")],
         ForceHitsOntoSurface = True,
         OutputLevel = INFO
     )
