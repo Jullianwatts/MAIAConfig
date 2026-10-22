@@ -2,9 +2,9 @@
 '''  Locate the BIB calorimeter energy-threshold ROOT files      '''
 '''-------------------------------------------------------------'''
 # The CaloHitSelector reads per-(theta, layer) energy-threshold maps from ROOT
-# files shipped with the MyBIBUtils package (ECAL_Thresholds_<E>.root etc.).
-# This helper finds them inside the installed software stack, mirroring the
-# findCaloThresholds logic of the Marlin steer_reco.py.
+# files shipped with k4Reco (MAIA_ECAL_Thresholds_<E>.root etc., installed into
+# <prefix>/share/k4Reco/data/). This helper finds them inside the installed
+# software stack, mirroring the findCaloThresholds logic of the Marlin steer_reco.py.
 import os
 import glob
 
@@ -14,12 +14,12 @@ DEFAULT_ENERGY = "10TeV"
 
 def find_calo_thresholds(detector, energy=DEFAULT_ENERGY):
     """
-    Return the absolute path to the ``<detector>_Thresholds_<energy>.root`` file
+    Return the absolute path to the ``MAIA_<detector>_Thresholds_<energy>.root`` file
     (``detector`` is "ECAL" or "HCAL"). Set the MUCOLL_CALO_THRESHOLDS_DIR
     environment variable to override the search directory. Raises
     FileNotFoundError if the file cannot be located.
     """
-    fname = f"{detector}_Thresholds_{energy}.root"
+    fname = f"MAIA_{detector}_Thresholds_{energy}.root"
     candidates = []
 
     # 1) Explicit override.
