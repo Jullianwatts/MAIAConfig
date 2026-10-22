@@ -10,7 +10,8 @@ def VXDBarrel_cfg(args):
     inputHitCollections = overlay_input("VertexBarrelCollection", args)
     return DDPlanarDigi(
         "VXDBarrelDigitiser",
-        CorrectTimesForPropagation = True,
+        CorrectTimesForPropagation = False,
+        CorrectTimeWindowForPropagation = True,
         IsStrip = False,
         ResolutionT = [0.03],
         ResolutionU = [0.005],
@@ -33,7 +34,8 @@ def VXDEndcap_cfg(args):
     inputHitCollections = overlay_input("VertexEndcapCollection", args)
     return DDPlanarDigi(
         "VXDEndcapDigitiser",
-        CorrectTimesForPropagation = True,
+        CorrectTimesForPropagation = False,
+        CorrectTimeWindowForPropagation = True,
         IsStrip = False,
         ResolutionT = [0.03],
         ResolutionU = [0.005],

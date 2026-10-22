@@ -46,6 +46,13 @@ def get_reco_args():
         default=1,
     )
 
+    parser.add_argument(
+        "--tracking3D",
+        help="3D tracking: no hit time in the seeding or the CKF, CKF chi2 cut 10",
+        action="store_true",
+        default=False,
+    )
+
     # Shared with digi_args.
     add_argument_once(
         parser,
