@@ -5,25 +5,38 @@ and that these are the collections the downstream algorithms read.
 The downstream algorithms (coning, double-layer filtering, hit merging, tracking) are configured
 once, so whichever digitiser runs for a subdetector must produce exactly their input collections.
 
-The realistic digitisers need MuonCVXDDigitiser, which not every release image ships: without it
-only the parametric digitisers are checked.
+The realistic digitisers, the coners and the double-layer filter are MuonCollider-specific
+components that not every release image ships. Whatever is missing is reported and left out of
+the checks; the parametric digitisers and the mergers come from upstream and are required.
 
 Usage: PYTHONPATH=<MAIAConfig>/MAIAConfig check_tracker_collections.py
 """
 import argparse
+import importlib
 import sys
 
 from GaudiKernel.Configurable import Configurable
 
 from TrackerDigi import tracking_inner, tracking_outer, tracking_vertex
-try:
-    from TrackerDigi import realistic_inner, realistic_outer, realistic_vertex
-except ImportError as error:
-    print(f"realistic tracker digitisers not available ({error}): checking the parametric ones only")
-    realistic_inner = realistic_outer = realistic_vertex = None
-from TrackerDigi.coning import tracker_coner_cfgs
-from Tracking.filterDL_vertex import filterDL_vertexBarrel_cfg, filterDL_vertexEndcap_cfg
 from Tracking.mergers import mergehits_cfg, mergehitsrelations_cfg
+
+skipped = []
+
+
+def optional(module_name):
+    """The module, or None when the image does not ship the components it configures."""
+    try:
+        return importlib.import_module(module_name)
+    except ImportError as error:
+        skipped.append(f"{module_name} ({error})")
+        return None
+
+
+realistic_vertex = optional("TrackerDigi.realistic_vertex")
+realistic_inner = optional("TrackerDigi.realistic_inner")
+realistic_outer = optional("TrackerDigi.realistic_outer")
+coner_module = optional("TrackerDigi.coning")
+dl_module = optional("Tracking.filterDL_vertex")
 
 # subdetector prefix: (parametric module, realistic module)
 MODULES = {
@@ -78,15 +91,16 @@ def require(consumer, inputs, available):
         failures.append(f"{consumer} reads {missing}, which no digitiser writes")
 
 
-for coner in tracker_coner_cfgs(args()):
-    require(coner.name(), coner.TrackerHitInputCollections, produced["hits"])
-    require(coner.name(), coner.TrackerHitInputRelations, produced["relations"])
-    for name in coner.TrackerHitOutputCollections:
-        coned_hits.discard(name)  # every coned collection must be written by a coner
-    for name in coner.TrackerHitOutputRelations:
-        coned_relations.discard(name)
-if coned_hits or coned_relations:
-    failures.append(f"no coner writes {sorted(coned_hits | coned_relations)}")
+if coner_module:
+    for coner in coner_module.tracker_coner_cfgs(args()):
+        require(coner.name(), coner.TrackerHitInputCollections, produced["hits"])
+        require(coner.name(), coner.TrackerHitInputRelations, produced["relations"])
+        for name in coner.TrackerHitOutputCollections:
+            coned_hits.discard(name)  # every coned collection must be written by a coner
+        for name in coner.TrackerHitOutputRelations:
+            coned_relations.discard(name)
+    if coned_hits or coned_relations:
+        failures.append(f"no coner writes {sorted(coned_hits | coned_relations)}")
 
 for coning in (False, True):
     suffix = "Coned" if coning else ""
@@ -99,9 +113,12 @@ for coning in (False, True):
     if len(merge_hits.InputCollections) != len(MODULES) or len(merge_relations.InputCollections) != len(MODULES):
         failures.append(f"the mergers (coning {coning}) do not read all the {len(MODULES)} subdetectors")
 
-for dl_filter in (filterDL_vertexBarrel_cfg(), filterDL_vertexEndcap_cfg()):
-    require(dl_filter.name(), dl_filter.InputCollection, produced["hits"])
+if dl_module:
+    for dl_filter in (dl_module.filterDL_vertexBarrel_cfg(), dl_module.filterDL_vertexEndcap_cfg()):
+        require(dl_filter.name(), dl_filter.InputCollection, produced["hits"])
 
+for module in skipped:
+    print("not available, not checked:", module)
 for failure in failures:
     print("FAILED:", failure)
 print("OK" if not failures else f"{len(failures)} check(s) failed")
