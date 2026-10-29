@@ -7,10 +7,13 @@ Used only with `--pandoraCalibration default` (off by default).
 
 Produced with pandora-calibration-tools
 (`make_ecal_theta_energy_calibration.py`, `make_hcal_theta_energy_calibration.py`)
-from v2.11 (Marlin) reconstruction, with ECalToEM = 1.02373335516,
+from Marlin (LCIO) reconstruction: the EM table from the MAIA_v0 v6 photon gun
+production plus v2.11 transition-region photon samples, the hadronic table from
+v2.11 pion gun samples. They were trained with ECalToEM = 1.02373335516,
 ECalToHad = 1.38, HCalToHad = 1.25 and software compensation off. The
 calibration switches Pandora to these values when enabled; see
 `Common/pandora_calibration.py`.
 
-Outside the table range the correction is 1.0: EM clusters below 30 GeV and
-hadronic clusters below 10 GeV are not corrected.
+Clusters below a table's lowest energy edge (30 GeV for EM, 10 GeV for
+hadronic) or outside its theta range (the EM table covers 0.15 to 2.99 rad)
+are not corrected. Clusters above the top energy edge use the last bin.
