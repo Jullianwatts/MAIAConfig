@@ -12,15 +12,18 @@ def pandoraPFA_cfg(the_args=None):
     --pandoraSettings / MAIA_PANDORA_SETTINGS_DIR point), so the job does not
     have to run from a directory containing a copy of PandoraSettings/.
 
-    The theta-energy calibration payloads are located the same way (see
-    Common/pandora_calibration.py) and applied by default, so a plain
-    reconstruction job produces calibrated cluster and PFO energies. Pass
-    --pandoraCalibration none to switch them off, or a comma-separated list of
-    payload names/paths to use your own.
+    The theta-energy calibration is opt-in (see Common/pandora_calibration.py).
+    Pass --pandoraCalibration default to use the tables shipped in
+    Calibration/, or a comma-separated list of table names/paths to use your
+    own. Without it, reconstruction is unchanged.
     """
     settings = getattr(the_args, "pandoraSettings", None) or "PandoraSettingsDefault.xml"
     calibration = pandora_calibration_params(getattr(the_args, "pandoraCalibration", None))
-    return DDPandoraPFANewAlgorithm(
+    # The theta-energy plugins are only named in PandoraSettingsThetaEnergy.xml,
+    # so switch to it when a calibration is requested and no other XML was given.
+    if calibration and settings == "PandoraSettingsDefault.xml":
+        settings = "PandoraSettingsThetaEnergy.xml"
+    pandora = DDPandoraPFANewAlgorithm(
         "PandoraPFANew",
         CreateGaps = False,
         CurvatureToMomentumFactor =  0.00015,
@@ -39,10 +42,10 @@ def pandoraPFA_cfg(the_args=None):
         ECalSiToHadGeVCalibrationBarrel = 1,
         ECalSiToHadGeVCalibrationEndCap = 1,
         ECalSiToMipCalibration = 1,
-        # The four flat GeV calibrations below define the energy basis the
-        # theta-energy calibration tables are trained in. Change any of them and
-        # the tables in Calibration/ have to be regenerated to match, or the
-        # correction is applied in a different basis than it was measured in.
+        # The four flat GeV calibrations below are the uncalibrated defaults.
+        # With --pandoraCalibration on, they (and MaxClusterEnergyToApplySoftComp)
+        # are replaced by the values the theta-energy tables were trained against,
+        # see CALIBRATED_PANDORA_CONSTANTS in Common/pandora_calibration.py.
         ECalToEMGeVCalibration = 1.02373335516,
         ECalToHadGeVCalibrationBarrel = 1.371,
         ECalToHadGeVCalibrationEndCap = 1.371,
@@ -124,15 +127,14 @@ def pandoraPFA_cfg(the_args=None):
             "MuonBarrelHitsRelations", "MuonEndcapHitsRelations"],
         PFOCollectionName = ["PandoraPFOs"],
         StartVertexCollectionName = ["PandoraStartVertices"],
-        OutputLevel = INFO,
-        # Theta-energy calibration: the Electromagnetic/HadronicThetaEnergy-
-        # Correction* properties built from Calibration/*.json. Empty when
-        # --pandoraCalibration none or when no payloads are installed, in which
-        # case the correction plugins register with empty tables and act as the
-        # identity. The plugins also have to be named in
-        # PandoraSettings/PandoraSettingsDefault.xml to be called at all.
-        **calibration
+        OutputLevel = INFO
     )
+    # Theta-energy calibration: the table files, plus the flat constants and
+    # soft-compensation setting the tables were trained with, which replace the
+    # values above. Empty unless --pandoraCalibration is given.
+    for key, value in calibration.items():
+        setattr(pandora, key, value)
+    return pandora
 
 def fastJet_cfg():
     # The algorithm and the clustering mode are named by a string, with their numeric
