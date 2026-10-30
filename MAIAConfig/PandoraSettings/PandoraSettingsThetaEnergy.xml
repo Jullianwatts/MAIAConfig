@@ -107,13 +107,19 @@
                     <MaxCentroidDifference>500</MaxCentroidDifference>
                 </algorithm>
                 <algorithm type = "ShowerMipMerging2"/>
+                <!-- Compare track energies with theta-energy corrected cluster energies when deciding merges.
+                     The name must match the hadronic plugin registered by DDPandoraPFANewAlgorithm. -->
                 <algorithm type = "ProximityBasedMerging">
                     <algorithm type = "TrackClusterAssociation"/>
+                    <UseThetaEnergyCorrectionForTrackComparison>true</UseThetaEnergyCorrectionForTrackComparison>
+                    <ThetaEnergyCorrectionName>HadronicThetaEnergyBinned</ThetaEnergyCorrectionName>
                 </algorithm>
                 <algorithm type = "ConeBasedMerging">
                     <algorithm type = "TrackClusterAssociation"/>
                     <!-- Corresponds to an angle of 0.1 radians. Much smaller than default of 0.9 (~0.45 rad). -->
                     <ConeCosineHalfAngle>0.995</ConeCosineHalfAngle>
+                    <UseThetaEnergyCorrectionForTrackComparison>true</UseThetaEnergyCorrectionForTrackComparison>
+                    <ThetaEnergyCorrectionName>HadronicThetaEnergyBinned</ThetaEnergyCorrectionName>
                 </algorithm>
             </associationAlgorithms>
         </algorithm>
