@@ -2,7 +2,7 @@ from GaudiKernel.Constants import INFO, WARNING, DEBUG
 from Configurables import DDPandoraPFANewAlgorithm, FastJetAlg
 
 from Common.pandora_settings import resolve_pandora_settings
-from Common.pandora_calibration import pandora_calibration_params
+from Common.pandora_calibration import calibration_branches, pandora_calibration_params
 
 def pandoraPFA_cfg(the_args=None):
     """
@@ -19,10 +19,6 @@ def pandoraPFA_cfg(the_args=None):
     """
     settings = getattr(the_args, "pandoraSettings", None) or "PandoraSettingsDefault.xml"
     calibration = pandora_calibration_params(getattr(the_args, "pandoraCalibration", None))
-    # The theta-energy plugins are only named in PandoraSettingsThetaEnergy.xml,
-    # so switch to it when a calibration is requested and no other XML was given.
-    if calibration and settings == "PandoraSettingsDefault.xml":
-        settings = "PandoraSettingsThetaEnergy.xml"
     pandora = DDPandoraPFANewAlgorithm(
         "PandoraPFANew",
         CreateGaps = False,
@@ -82,7 +78,10 @@ def pandoraPFA_cfg(the_args=None):
         MuonToMipCalibration = 19607.8,
         NOuterSamplingLayers = 3,
         OutputEnergyCorrectionPoints = [],
-        PandoraSettingsXmlFile = resolve_pandora_settings(settings),
+        # With the calibration on, the theta-energy plugins are added to this
+        # XML (default or --pandoraSettings) in the copy handed to Pandora.
+        PandoraSettingsXmlFile = resolve_pandora_settings(
+            settings, theta_energy_branches=calibration_branches(calibration)),
         ReachesECalBarrelTrackerOuterDistance = -100,
         ReachesECalBarrelTrackerZMaxDistance = -50,
         ReachesECalFtdZMaxDistance = 1,

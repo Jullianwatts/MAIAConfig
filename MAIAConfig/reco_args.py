@@ -105,9 +105,9 @@ def get_reco_args():
              "MAIAConfig (override it with MAIA_PANDORA_CALIBRATION_DIR), or a "
              "comma-separated list of table files; a bare file name is looked "
              "up in the Calibration directory, an absolute or run-directory "
-             "relative path is used as given. Also switches the Pandora "
-             "settings to PandoraSettingsThetaEnergy.xml unless "
-             "--pandoraSettings is given. Off by default",
+             "relative path is used as given. The calibration plugins are "
+             "added at run time to the Pandora settings XML in use (the "
+             "default or --pandoraSettings). Off by default",
         type=str,
         default=None,
     )

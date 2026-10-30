@@ -33,8 +33,9 @@
 #
 # IMPORTANT: a calibration table is only valid for the flat calorimeter
 # constants it was trained against (CALIBRATED_PANDORA_CONSTANTS below) and for
-# the hadronic energy-correction plugin chain in
-# PandoraSettings/PandoraSettingsThetaEnergy.xml. Those constants replace the
+# the hadronic energy-correction plugin chain it runs in (SoftwareCompensation,
+# then the table). The plugins are added to the Pandora settings XML at run time
+# by Common/pandora_settings.py, whichever XML is used. Those constants replace the
 # defaults in ParticleFlow/pandora.py only when the calibration is on, so the
 # default reconstruction is unchanged. Change any of them and the tables have to
 # be regenerated: the correction would otherwise be applied in a different
@@ -201,6 +202,14 @@ def load_calibration_tables(names):
         print(f"MAIAConfig: loaded Pandora {basis} calibration table {path}")
 
     return params
+
+
+def calibration_branches(params):
+    """
+    Return the branches ("em", "hadronic") that have a table in ``params``, as
+    returned by pandora_calibration_params().
+    """
+    return tuple(basis for basis, prop in _BRANCH_PROPERTY.items() if prop in params)
 
 
 def pandora_calibration_params(setting=None):
