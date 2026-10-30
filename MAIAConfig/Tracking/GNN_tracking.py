@@ -19,10 +19,10 @@ def GNNTracker_cfg(args):
     """
     return GNNTrackFinder(
         "GNNTrackFinder",
-        EdgeClassifierModelPath=[str(args.modelBase + "/edge_classifier-InteractionGNN2-v1.onnx")],
+        EdgeClassifierModelPath=[str(args.modelBase + "/edge_classifier-InteractionGNN2-v2.onnx")],
         EdgeClassifierCut=[0.01],
         NodeEmbeddingModelPath=str(
-            args.modelBase + "/graph_construction-MetricLearningT-v1.onnx"
+            args.modelBase + "/graph_construction-MetricLearningT-v2.onnx"
         ),
         EdgeBuildingRadius=0.1,
         # Only caps the neighbours per hit on CUDA, the CPU edge building keeps
